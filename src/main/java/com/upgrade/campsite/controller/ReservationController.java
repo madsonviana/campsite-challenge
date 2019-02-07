@@ -15,13 +15,13 @@ public class ReservationController {
     private ReservationService reservationService;
 
 
-    @GetMapping("/reservations/{id}")
+    @GetMapping("/api/reservations/{id}")
     public Mono<Reservation> findById(@PathVariable String id) {
         return reservationService.findReservationById(id)
                 .switchIfEmpty(Mono.error(ReservationNotFound::new));
     }
 
-    @PostMapping("/reservations")
+    @PostMapping("/api/reservations")
     public Mono<Reservation> createReservation(@RequestBody Reservation reservation) {
         try {
             return reservationService.book(reservation);
