@@ -43,7 +43,7 @@ public class ReservationControllerTest {
 
     @Test
     public void findByIdOK() {
-        when(reservationService.findReservationById("1")).thenReturn(Mono.just(reservation));
+        when(reservationService.findById("1")).thenReturn(Mono.just(reservation));
 
         webTestClient.get()
                 .uri("/api/reservations/1")
@@ -54,7 +54,7 @@ public class ReservationControllerTest {
     }
     @Test
     public void findByIdNotFound() {
-        when(reservationService.findReservationById("1")).thenReturn(Mono.empty());
+        when(reservationService.findById("1")).thenReturn(Mono.empty());
 
         webTestClient.get()
                 .uri("/api/reservations/1")

@@ -27,5 +27,6 @@ public class Reservation {
 
     private Date departureDate;
 
+    private Status status;
 
 }

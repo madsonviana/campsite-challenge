@@ -2,6 +2,7 @@ package com.upgrade.campsite.service.impl;
 
 import com.upgrade.campsite.exception.BusinessException;
 import com.upgrade.campsite.model.Reservation;
+import com.upgrade.campsite.model.Status;
 import com.upgrade.campsite.repository.ReservationRepository;
 import com.upgrade.campsite.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,22 +25,50 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public Mono<Reservation> book(Reservation reservation) throws BusinessException {
-        throw new BusinessException("Ocorreu um erro ao adicionar a reserva");
-        //return reservationRepository.save(reservation);
+        return Mono.just(reservation)
+                .flatMap(this::checkOverlapping)
+                .map(r -> { r.setStatus(Status.PROCESSING); return r;})
+                .flatMap(reservationRepository::save);
     }
 
     @Override
-    public Mono<Reservation> findReservationById(String id) {
+    public Mono<Reservation> findById(String id) {
         return reservationRepository.findById(id);
     }
 
     @Override
-    public Mono<Void> cancel(String id) throws BusinessException {
-        return null;
+    public Mono<Reservation> cancel(String id) throws BusinessException {
+        return reservationRepository.findById(id)
+                .map(r -> Reservation.builder()
+                            .id(r.getId())
+                            .fullName(r.getFullName())
+                            .departureDate(r.getDepartureDate())
+                            .arrivalDate(r.getArrivalDate())
+                            .email(r.getEmail())
+                            .status(Status.CANCELED)
+                            .build())
+                .flatMap(reservationRepository::save);
     }
 
     @Override
     public Mono<Reservation> update(String id, Date arrivalDate, Date departureDate) throws BusinessException {
-        return null;
+        // Todo validar reserva
+
+        return reservationRepository.findByIdAndStatus(id, Status.PROCESSING)
+                .map(r -> Reservation.builder()
+                            .id(r.getId())
+                            .fullName(r.getFullName())
+                            .departureDate(departureDate)
+                            .arrivalDate(arrivalDate)
+                            .email(r.getEmail())
+                            .status(r.getStatus())
+                            .build())
+                .flatMap(reservationRepository::save);
+    }
+
+    private Mono<Reservation> checkOverlapping(Reservation r) {
+        return reservationRepository.countByArrivalDateBetween(r.getArrivalDate(),r.getDepartureDate())
+                .flatMap(c -> (c > 0) ? Mono.error(new BusinessException()) : Mono.just(r));
+
     }
 }

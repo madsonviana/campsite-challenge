@@ -13,9 +13,9 @@ public interface ReservationService {
 
     Mono<Reservation> book(Reservation reservation) throws BusinessException;
 
-    Mono<Reservation> findReservationById(String id);
+    Mono<Reservation> findById(String id);
 
-    Mono<Void> cancel(String id) throws BusinessException;
+    Mono<Reservation> cancel(String id) throws BusinessException;
 
     Mono<Reservation> update(String id, Date arrivalDate, Date departureDate) throws BusinessException;
 
