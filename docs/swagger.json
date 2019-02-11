@@ -1,0 +1,289 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "This project exposes a REST api that manages a campsite reservations.\nThis is an implementation of an Upgrade's challenge.",
+    "version": "1.0.0",
+    "title": "Upgrade Campsite Challenge",
+    "contact": {
+      "name": "Madson Viana",
+      "url": "https://madsonviana.github.io",
+      "email": "me@madsonviana.info"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://github.com/madsonviana/campsite-challenge/blob/master/LICENSE"
+    }
+  },
+  "host": "localhost:8080",
+  "basePath": "/",
+  "paths": {
+    "/api/reservations": {
+      "post": {
+        "tags": [
+          "reservation-controller"
+        ],
+        "summary": "createReservation",
+        "operationId": "createReservationUsingPOST",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "reservation",
+            "description": "reservation",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Reservation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/Reservation"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/reservations/{id}": {
+      "get": {
+        "tags": [
+          "reservation-controller"
+        ],
+        "summary": "findById",
+        "operationId": "findByIdUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Reservation"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      },
+      "put": {
+        "tags": [
+          "reservation-controller"
+        ],
+        "summary": "update",
+        "operationId": "updateUsingPUT",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "dto",
+            "description": "dto",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/DatesDTO"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Reservation"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      },
+      "delete": {
+        "tags": [
+          "reservation-controller"
+        ],
+        "summary": "cancel",
+        "operationId": "cancelUsingDELETE",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Reservation"
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/availabilities": {
+      "get": {
+        "tags": [
+          "availability-controller"
+        ],
+        "summary": "checkAvailability",
+        "operationId": "checkAvailabilityUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "finalDate",
+            "in": "query",
+            "description": "finalDate",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "initialDate",
+            "in": "query",
+            "description": "initialDate",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Date"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "definitions": {
+    "DatesDTO": {
+      "type": "object",
+      "properties": {
+        "arrivalDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "departureDate": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "title": "DatesDTO"
+    },
+    "Date": {
+      "type": "string",
+      "format": "date"
+    },
+    "Reservation": {
+      "type": "object",
+      "properties": {
+        "arrivalDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "departureDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "email": {
+          "type": "string"
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "CANCELED"
+          ]
+        }
+      },
+      "title": "Reservation"
+    }
+  }
+}
