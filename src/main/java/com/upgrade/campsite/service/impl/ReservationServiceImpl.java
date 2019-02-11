@@ -1,16 +1,24 @@
 package com.upgrade.campsite.service.impl;
 
-import com.upgrade.campsite.exception.BusinessException;
+import com.upgrade.campsite.exception.ReservationNotFound;
 import com.upgrade.campsite.model.Reservation;
 import com.upgrade.campsite.model.Status;
 import com.upgrade.campsite.repository.ReservationRepository;
 import com.upgrade.campsite.service.ReservationService;
+import com.upgrade.campsite.util.DateUtil;
+import com.upgrade.campsite.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.util.Iterator;
+import java.util.List;
 
 @Service
 public class ReservationServiceImpl implements ReservationService {
@@ -18,57 +26,78 @@ public class ReservationServiceImpl implements ReservationService {
     @Autowired
     private ReservationRepository reservationRepository;
 
+    @Autowired
+    private ValidationUtil validationUtil;
+
+    @Autowired
+    private JmsTemplate jmsTemplate;
+
     @Override
-    public Flux<Date> checkAvailability(Date arrivalDate, Date departureDate) {
-        return null;
+    public Flux<LocalDate> checkAvailability(LocalDate initialDate, LocalDate finalDate) {
+        return reservationRepository.findByRange(initialDate, finalDate)
+                .collectList()
+                .flatMapMany(reservations -> {
+                    List<LocalDate> days = DateUtil.getDaysFromRange(initialDate, finalDate);
+                    Iterator<LocalDate> daysIterator = days.iterator();
+                    for( ; daysIterator.hasNext() ;  ) {
+                        LocalDate date = daysIterator.next();
+                        for(Reservation reservation : reservations) {
+                            if(date.isEqual(reservation.getArrivalDate())
+                                    || (date.isAfter(reservation.getArrivalDate())
+                                    && date.isBefore(reservation.getDepartureDate()))) {
+                                daysIterator.remove();
+                            }
+                        }
+                    }
+                     return Flux.fromArray(days.toArray(new LocalDate[0]));
+                });
     }
 
     @Override
-    public Mono<Reservation> book(Reservation reservation) throws BusinessException {
-        return Mono.just(reservation)
-                .flatMap(this::checkOverlapping)
-                .map(r -> { r.setStatus(Status.PROCESSING); return r;})
-                .flatMap(reservationRepository::save);
+    @JmsListener(destination = "bookQueue")
+    public Message<Reservation> book(Reservation reservation) {
+        return MessageBuilder.withPayload(Mono.just(reservation)
+                .flatMap(this::applyValidations)
+                .map(r -> { r.setStatus(Status.ACTIVE); return r;})
+                .flatMap(reservationRepository::save)
+                .block())
+                .build();
     }
 
     @Override
     public Mono<Reservation> findById(String id) {
-        return reservationRepository.findById(id);
-    }
-
-    @Override
-    public Mono<Reservation> cancel(String id) throws BusinessException {
         return reservationRepository.findById(id)
-                .map(r -> Reservation.builder()
-                            .id(r.getId())
-                            .fullName(r.getFullName())
-                            .departureDate(r.getDepartureDate())
-                            .arrivalDate(r.getArrivalDate())
-                            .email(r.getEmail())
-                            .status(Status.CANCELED)
-                            .build())
+                .switchIfEmpty(Mono.error(ReservationNotFound::new));
+    }
+
+    @Override
+    public Mono<Reservation> cancel(String id) {
+        return reservationRepository.findByIdAndStatus(id, Status.ACTIVE)
+                .switchIfEmpty(Mono.error(ReservationNotFound::new))
+                .flatMap(validationUtil::validateCancelDepartureDate)
+                .map(r -> { r.setStatus(Status.CANCELED); return r;})
                 .flatMap(reservationRepository::save);
     }
 
     @Override
-    public Mono<Reservation> update(String id, Date arrivalDate, Date departureDate) throws BusinessException {
-        // Todo validar reserva
-
-        return reservationRepository.findByIdAndStatus(id, Status.PROCESSING)
-                .map(r -> Reservation.builder()
-                            .id(r.getId())
-                            .fullName(r.getFullName())
-                            .departureDate(departureDate)
-                            .arrivalDate(arrivalDate)
-                            .email(r.getEmail())
-                            .status(r.getStatus())
-                            .build())
+    public Mono<Reservation> update(String id, LocalDate arrivalDate, LocalDate departureDate) {
+        return reservationRepository.findByIdAndStatus(id, Status.ACTIVE)
+                .switchIfEmpty(Mono.error(ReservationNotFound::new))
+                .map(r -> {
+                    r.setArrivalDate(arrivalDate);
+                    r.setDepartureDate(departureDate);
+                    return r;
+                })
+                .flatMap(this::applyValidations)
                 .flatMap(reservationRepository::save);
     }
 
-    private Mono<Reservation> checkOverlapping(Reservation r) {
-        return reservationRepository.countByArrivalDateBetween(r.getArrivalDate(),r.getDepartureDate())
-                .flatMap(c -> (c > 0) ? Mono.error(new BusinessException()) : Mono.just(r));
-
+    private Mono<Reservation> applyValidations(Reservation reservation) {
+        return Mono.just(reservation)
+                .flatMap(validationUtil::validateRequired)
+                .flatMap(validationUtil::validateReservationDate)
+                .flatMap(validationUtil::validateMaxDays)
+                .flatMap(validationUtil::validateOverlapping);
     }
+
 }

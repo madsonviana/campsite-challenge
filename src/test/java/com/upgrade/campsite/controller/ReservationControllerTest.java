@@ -1,6 +1,6 @@
 package com.upgrade.campsite.controller;
 
-import com.upgrade.campsite.exception.BusinessException;
+import com.upgrade.campsite.exception.MaxReservationDaysExcedeedError;
 import com.upgrade.campsite.model.Reservation;
 import com.upgrade.campsite.service.ReservationService;
 import org.junit.Test;
@@ -14,7 +14,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.Mockito.*;
-import java.util.Date;
+
+import java.time.LocalDate;
 
 @RunWith(SpringRunner.class)
 @WebFluxTest
@@ -27,16 +28,16 @@ public class ReservationControllerTest {
     private WebTestClient webTestClient;
 
     private final Reservation reservation = Reservation.builder()
-            .arrivalDate(new Date())
-            .departureDate(new Date())
+            .arrivalDate(LocalDate.now())
+            .departureDate(LocalDate.now())
             .fullName("Madson Viana")
             .email("me@madsonviana.info")
             .build();
 
     private final Reservation reservationCreated = Reservation.builder()
             .id("5c5a198b3acf52388d17c8e1")
-            .arrivalDate(new Date())
-            .departureDate(new Date())
+            .arrivalDate(LocalDate.now())
+            .departureDate(LocalDate.now())
             .fullName("Madson Viana")
             .email("me@madsonviana.info")
             .build();
@@ -65,7 +66,7 @@ public class ReservationControllerTest {
 
     @Test
     public void createReservationOK() throws Exception {
-        when(reservationService.book(reservation)).thenReturn(Mono.just(reservationCreated));
+        //when(reservationService.book(reservation)).thenReturn(Mono.just(reservationCreated));
 
         webTestClient.post()
                 .uri("/api/reservations")
@@ -74,13 +75,11 @@ public class ReservationControllerTest {
                 .expectStatus().isOk()
                 .expectBody(Reservation.class)
                 .isEqualTo(reservationCreated);
-
     }
-
 
     @Test
     public void createReservationError() throws Exception {
-        doThrow(new BusinessException()).when(reservationService).book(reservation);
+        //when(reservationService.book(reservation)).thenReturn(Mono.error(MaxReservationDaysExcedeedError::new));
 
         webTestClient.post()
                 .uri("/api/reservations")

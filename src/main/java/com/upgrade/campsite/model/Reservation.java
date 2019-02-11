@@ -7,14 +7,17 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
+import java.io.Serializable;
+import java.time.LocalDate;
 
 @Document
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Reservation {
+public class Reservation implements Serializable {
+
+    private static final long serialVersionUID = -5021462203890304661L;
 
     @Id
     private String id;
@@ -23,9 +26,9 @@ public class Reservation {
 
     private String email;
 
-    private Date arrivalDate;
+    private LocalDate arrivalDate;
 
-    private Date departureDate;
+    private LocalDate departureDate;
 
     private Status status;
 

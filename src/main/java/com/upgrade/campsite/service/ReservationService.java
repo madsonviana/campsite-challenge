@@ -1,22 +1,22 @@
 package com.upgrade.campsite.service;
 
-import com.upgrade.campsite.exception.BusinessException;
 import com.upgrade.campsite.model.Reservation;
+import org.springframework.messaging.Message;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public interface ReservationService {
 
-    Flux<Date> checkAvailability(Date arrivalDate, Date departureDate);
+    Flux<LocalDate> checkAvailability(LocalDate arrivalDate, LocalDate departureDate);
 
-    Mono<Reservation> book(Reservation reservation) throws BusinessException;
+    Message<Reservation> book(Reservation reservation);
 
     Mono<Reservation> findById(String id);
 
-    Mono<Reservation> cancel(String id) throws BusinessException;
+    Mono<Reservation> cancel(String id);
 
-    Mono<Reservation> update(String id, Date arrivalDate, Date departureDate) throws BusinessException;
+    Mono<Reservation> update(String id, LocalDate arrivalDate, LocalDate departureDate);
 
 }
