@@ -18,7 +18,7 @@ public class AvailabilityController {
     @Autowired
     private AvailabilityService availabilityService;
 
-    @GetMapping("/")
+    @GetMapping
     public Flux<LocalDate> checkAvailability(@RequestParam String initialDate, @RequestParam(required = false) String finalDate) {
         LocalDate initialParam = LocalDate.parse(initialDate);
         LocalDate finalParam;
