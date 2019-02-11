@@ -5,7 +5,6 @@ import com.upgrade.campsite.model.Reservation;
 import com.upgrade.campsite.model.Status;
 import com.upgrade.campsite.repository.ReservationRepository;
 import com.upgrade.campsite.service.ReservationService;
-import com.upgrade.campsite.util.DateUtil;
 import com.upgrade.campsite.util.QueueUtil;
 import com.upgrade.campsite.util.ValidationUtil;
 import org.apache.activemq.command.ActiveMQTempQueue;
@@ -13,18 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.JmsHeaders;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.jms.ObjectMessage;
 import java.time.LocalDate;
-import java.util.Iterator;
-import java.util.List;
 
 @Service
 public class ReservationServiceImpl implements ReservationService {
@@ -37,13 +30,6 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Autowired
     private JmsTemplate jmsTemplate;
-
-    @Override
-    public Flux<LocalDate> checkAvailability(LocalDate initialDate, LocalDate finalDate) {
-        return reservationRepository.findByRange(initialDate, finalDate)
-                .collectList()
-                .flatMapMany(reservations -> filterDates(reservations, initialDate, finalDate));
-    }
 
     @Override
     @JmsListener(destination = QueueUtil.BOOKING_QUEUE)
@@ -91,22 +77,6 @@ public class ReservationServiceImpl implements ReservationService {
                 .flatMap(validationUtil::validateReservationDate)
                 .flatMap(validationUtil::validateMaxDays)
                 .flatMap(validationUtil::validateOverlapping);
-    }
-
-    private Flux<LocalDate> filterDates(List<Reservation> reservations,  LocalDate initialDate, LocalDate finalDate) {
-        List<LocalDate> days = DateUtil.getDaysFromRange(initialDate, finalDate);
-        Iterator<LocalDate> daysIterator = days.iterator();
-        while(daysIterator.hasNext()) {
-            LocalDate date = daysIterator.next();
-            for(Reservation reservation : reservations) {
-                if(date.isEqual(reservation.getArrivalDate())
-                        || (date.isAfter(reservation.getArrivalDate())
-                        && date.isBefore(reservation.getDepartureDate()))) {
-                    daysIterator.remove();
-                }
-            }
-        }
-        return Flux.fromArray(days.toArray(new LocalDate[0]));
     }
 
 }
