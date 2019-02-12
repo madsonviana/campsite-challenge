@@ -22,6 +22,9 @@ mvn spring-boot:run
 
 The ```com.upgrade.campsite.MultipleRequestTest``` class test multiple parallel requests to creation of reservation on the same dates.
 
+##### API Documentation
+
+You can access the REST api documentation on url <https://madsonviana.github.io/campsite-challenge/>
 
 ### Notes
 
